@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AGIChat Widget — demo de desarrollo</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: system-ui, sans-serif;
+        background: #f3f5f4;
+        color: #1a2421;
+      }
+      main {
+        max-width: 640px;
+        padding: 48px 24px;
+      }
+      h1 {
+        margin-top: 0;
+      }
+      code {
+        background: #e2e8e5;
+        padding: 1px 5px;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Demo de desarrollo del widget</h1>
+      <p>
+        Esta página solo se usa con <code>pnpm dev</code>; no forma parte del paquete publicado.
+        Abre el chat con el botón de la esquina inferior derecha.
+      </p>
+      <ul>
+        <li><a href="/">Mock normal</a></li>
+        <li>
+          <a href="/?fallo=1">Simular fallo de conexión</a> (el primer intento falla, el reintento
+          funciona)
+        </li>
+      </ul>
+    </main>
+
+    <script type="module">
+      import { MockAgentTransport } from '/src/index.ts';
+
+      class FlakyMockTransport extends MockAgentTransport {
+        attempts = 0;
+
+        connect() {
+          this.attempts += 1;
+          if (this.attempts === 1) {
+            return Promise.reject(new Error('Fallo de conexión simulado'));
+          }
+          return super.connect();
+        }
+      }
+
+      const widget = document.createElement('agichat-widget');
+      widget.setAttribute('agent-name', 'Asistente AGIChat');
+      if (new URLSearchParams(location.search).has('fallo')) {
+        widget.transport = new FlakyMockTransport();
+      }
+      document.body.append(widget);
+    </script>
+  </body>
+</html>

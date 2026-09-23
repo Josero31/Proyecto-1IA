@@ -1,7 +1,15 @@
 {
   "name": "@agichat/widget-sdk",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "SDK de widget de chat embebible para AGIChat",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Josero31/Proyecto-1IA.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Josero31/Proyecto-1IA/issues"
+  },
+  "homepage": "https://github.com/Josero31/Proyecto-1IA#readme",
   "type": "module",
   "packageManager": "pnpm@12.5.1",
   "engines": {
@@ -18,11 +26,13 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "dev": "vite",
-    "build": "tsc -p tsconfig.build.json && vite build",
+    "build": "vite build && tsc -p tsconfig.build.json",
+    "size": "node scripts/check-bundle-size.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -31,7 +41,8 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm lint && pnpm typecheck && pnpm test:coverage && pnpm build && pnpm size"
   },
   "keywords": [
     "chat",
@@ -53,5 +64,9 @@
     "typescript-eslint": "^8.18.0",
     "vite": "^6.0.3",
     "vitest": "^3.2.7"
+  },
+  "dependencies": {
+    "dompurify": "^3.4.15",
+    "marked": "^18.0.13"
   }
 }

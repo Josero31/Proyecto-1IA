@@ -45,6 +45,9 @@ jobs:
       - name: Build del SDK
         run: pnpm build
 
+      - name: Presupuesto de tamaño del bundle
+        run: pnpm size
+
       - name: Subir artefacto de build
         uses: actions/upload-artifact@v4
         with:

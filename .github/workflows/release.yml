@@ -1,0 +1,61 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Publicar GitHub Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+
+      - name: Verificar que el tag coincide con package.json
+        run: |
+          VERSION="v$(node -p "require('./package.json').version")"
+          if [ "$VERSION" != "$GITHUB_REF_NAME" ]; then
+            echo "El tag $GITHUB_REF_NAME no coincide con la versión de package.json ($VERSION)."
+            exit 1
+          fi
+
+      - name: Lint, typecheck y tests con cobertura
+        run: |
+          pnpm lint
+          pnpm typecheck
+          pnpm test:coverage
+
+      - name: Build y presupuesto de tamaño
+        run: |
+          pnpm build
+          pnpm size
+
+      - name: Empaquetar
+        run: pnpm pack
+
+      - name: Crear GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes \
+            ./*.tgz \
+            dist/agichat-widget-sdk.js \
+            dist/agichat-widget-sdk.umd.cjs

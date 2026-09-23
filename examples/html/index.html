@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AGIChat — integración en HTML plano</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        max-width: 640px;
+        margin: 48px auto;
+        padding: 0 24px;
+      }
+
+      /* Tema opcional: el widget toma estos valores a través del Shadow DOM. */
+      agichat-widget {
+        --agichat-primary: #0a4d8c;
+        --agichat-primary-hover: #083d70;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Tienda de ejemplo</h1>
+    <p>El chat aparece en la esquina inferior izquierda con la paleta azul de esta tienda.</p>
+
+    <!--
+      1. Cargar el SDK. En producción, usar la URL del CDN o del paquete publicado:
+         <script type="module" src="https://cdn.jsdelivr.net/npm/@agichat/widget-sdk"></script>
+      2. Colocar la etiqueta. Eso es todo: usa el transporte mock por defecto.
+    -->
+    <script type="module" src="../../dist/agichat-widget-sdk.js"></script>
+
+    <agichat-widget
+      agent-name="Soporte Tienda"
+      welcome-message="Pregunta por tu pedido, envíos o devoluciones."
+      position="bottom-left"
+    ></agichat-widget>
+
+    <script type="module">
+      const widget = document.querySelector('agichat-widget');
+
+      widget.addEventListener('agichat-open', () => console.log('El usuario abrió el chat'));
+      widget.addEventListener('agichat-close', () => console.log('El usuario cerró el chat'));
+
+      // Fase 2: reemplazar el mock por el transporte real sin tocar nada más.
+      // import { WebSocketAgentTransport } from '...';
+      // widget.transport = new WebSocketAgentTransport({ url: 'wss://agentes.agichat.example' });
+    </script>
+  </body>
+</html>

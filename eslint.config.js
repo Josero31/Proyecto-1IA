@@ -28,5 +28,14 @@ export default tseslint.config(
       '@typescript-eslint/explicit-module-boundary-types': 'off',
     },
   },
+  {
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: {
+        process: 'readonly',
+        console: 'readonly',
+      },
+    },
+  },
   prettier,
 );

@@ -3,6 +3,8 @@ export {
   AGICHAT_WIDGET_TAG,
   defineAgiChatWidget,
 } from './widget/agichat-widget';
+export type { AgiChatWidgetEventName } from './widget/agichat-widget';
+export { renderMarkdown } from './widget/markdown';
 export { MockAgentTransport } from './transport/mock-transport';
 export type { MockAgentTransportOptions } from './transport/mock-transport';
 export { MessageStore } from './core/message-store';
