@@ -92,7 +92,10 @@ async def create_orchestrator(
     """
     settings = settings or Settings()
     client = AsyncOpenAI(
-        api_key=settings.groq_api_key.get_secret_value(), base_url=settings.llm_base_url
+        api_key=settings.groq_api_key.get_secret_value(),
+        base_url=settings.llm_base_url,
+        # El free tier de Groq limita los tokens por minuto: se espera y se reintenta.
+        max_retries=6,
     )
     async with McpToolbox(mcp_endpoints(settings)) as toolbox:
         yield build_orchestrator(

@@ -174,7 +174,7 @@ está en [`backend/docs/arquitectura-agentes.md`](backend/docs/arquitectura-agen
 - **Herramientas reutilizables:** otros agentes de AGIChat pueden conectarse a los mismos
   MCP servers sin tocar este código.
 
-**Límite real:** las cuotas del free tier de Groq, TMDB y Google Books. Se mitigan con la
+**Límite real:** las cuotas del free tier de Groq, TMDB y Google Books. En Groq, `gpt-oss-120b` permite 8000 tokens por minuto y 200 000 por día: el cliente reintenta con espera cuando recibe un 429, pero los 45 casos de los evals (y más aún con dos corridas) no caben en un solo día; conviene correrlos por categoría (`--categories`) en días distintos. Se mitigan con la
 caché, el límite por sesión y un cliente compatible con OpenAI que permite cambiar de
 proveedor solo con variables de entorno.
 

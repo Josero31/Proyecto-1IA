@@ -124,7 +124,9 @@ def _books_service(settings: Settings) -> BooksService:
 
 def build_llms(settings: Settings) -> tuple[LLM, LLM]:
     client = AsyncOpenAI(
-        api_key=settings.groq_api_key.get_secret_value(), base_url=settings.llm_base_url
+        api_key=settings.groq_api_key.get_secret_value(),
+        base_url=settings.llm_base_url,
+        max_retries=6,
     )
     return (
         OpenAICompatibleLLM(client, settings.agent_model, temperature=0.4),

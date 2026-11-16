@@ -14,6 +14,7 @@ dependencies = [
   "pydantic-settings>=2.6",
   "uvicorn>=0.30",
   "fastapi>=0.115",
+  "websockets>=13",
 ]
 
 [project.optional-dependencies]

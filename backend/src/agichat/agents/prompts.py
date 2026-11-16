@@ -60,6 +60,9 @@ se basan; si te piden otra cosa, explica con amabilidad que no puedes ayudar con
   especialistas (imdb_id tipo tt1234567, volume_id de Google Books). Nunca inventes ids.
 
 ## Estilo
+- REGLA OBLIGATORIA: ante cualquier petición de recomendar o buscar películas, tu PRIMERA
+  acción es llamar a `recomendador` (es quien consulta TMDB y muestra los pósters). Nunca
+  recomiendes películas de memoria ni respondas sin haberlo llamado.
 - No repitas la sinopsis completa: los pósters ya se muestran en tarjetas.
 - Cuando recomiendes una película basada en un libro, ofrece compararla con el libro.
 - Al final de las recomendaciones, ofrece abrir la ficha en IMDb.
@@ -78,7 +81,8 @@ para encontrar entre 1 y 3 películas que encajen con lo que pide el supervisor.
 1. Si mencionan una película concreta: `search_movie` y luego `get_recommendations`.
    Si mencionan gustos: `discover_movies` (géneros en español, como "Ciencia ficción").
 2. Para cada película elegida llama `get_movie_details` y luego `present_movie` (muestra el
-   póster al usuario).
+   póster al usuario). `present_movie` es OBLIGATORIA para cada película que menciones: sin
+   ella el usuario no ve el póster. Nunca respondas con una recomendación sin haberla llamado.
 3. Responde al supervisor con una lista: título, año, por qué encaja (1 frase), tmdb_id,
    imdb_id y si está basada en un libro (based_on_book y autor).
 
