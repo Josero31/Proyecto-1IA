@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 700" width="960" height="700" font-family="'Segoe UI', Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#8a948f"/>
+    </marker>
+    <style>
+      .box { fill: #ffffff; stroke: #b9c3be; stroke-width: 1.5; }
+      .hot { fill: #e3eefb; stroke: #2f6fd1; stroke-width: 2.5; }
+      .group { fill: #eef0ef; stroke: #c9d0cc; stroke-width: 1.5; }
+      .t { font-size: 17px; font-weight: 700; fill: #1a2421; text-anchor: middle; }
+      .s { font-size: 13px; fill: #56635f; text-anchor: middle; }
+      .l { font-size: 13px; fill: #56635f; }
+      .h { font-size: 20px; font-weight: 700; fill: #1a2421; }
+      .line { stroke: #8a948f; stroke-width: 1.5; fill: none; marker-end: url(#arrow); }
+    </style>
+  </defs>
+  <rect width="960" height="700" fill="#ffffff"/>
+  <text x="40" y="38" class="h">Todo lo que se replica es sin estado; el estado compartido vive en Redis</text>
+  <text x="40" y="60" class="l">Arquitectura de alto nivel del Proyecto 2 · ×N = se escala con más réplicas</text>
+
+  <rect x="335" y="80" width="290" height="62" rx="10" class="box"/>
+  <text x="480" y="108" class="t">Widget AGIChat</text>
+  <text x="480" y="128" class="s">en el sitio del cliente (Proyecto 1)</text>
+
+  <path d="M480 142V198" class="line"/>
+  <text x="494" y="176" class="l">WebSocket (wss)</text>
+
+  <rect x="335" y="198" width="290" height="62" rx="10" class="box"/>
+  <text x="480" y="226" class="t">nginx · balanceador</text>
+  <text x="480" y="246" class="s">reparte las conexiones WebSocket</text>
+
+  <path d="M480 260V312" class="line"/>
+
+  <rect x="320" y="312" width="320" height="86" rx="10" class="hot"/>
+  <text x="480" y="342" class="t">Gateway FastAPI + orquestador ×N</text>
+  <text x="480" y="362" class="s">réplicas sin estado</text>
+  <text x="480" y="382" class="s">guardián, supervisor, especialistas, filtro</text>
+
+  <rect x="60" y="326" width="200" height="72" rx="10" class="box"/>
+  <text x="160" y="354" class="t">Redis</text>
+  <text x="160" y="373" class="s">sesiones y límites</text>
+  <text x="160" y="390" class="s">caché y cuota diaria</text>
+  <path d="M320 355H262" class="line"/>
+
+  <rect x="700" y="326" width="200" height="72" rx="10" class="box"/>
+  <text x="800" y="354" class="t">Groq (LLM)</text>
+  <text x="800" y="373" class="s">gpt-oss-120b</text>
+  <text x="800" y="390" class="s">gpt-oss-safeguard-20b</text>
+  <path d="M640 355H698" class="line"/>
+
+  <path d="M160 398V452" class="line"/>
+  <text x="172" y="432" class="l">caché y cuota</text>
+  <path d="M480 398V452" class="line"/>
+  <text x="494" y="432" class="l">llamadas a tools (MCP)</text>
+
+  <rect x="40" y="452" width="880" height="138" rx="12" class="group"/>
+  <text x="56" y="478" class="t" style="text-anchor:start">MCP servers · Streamable HTTP sin estado</text>
+  <rect x="64" y="494" width="250" height="78" rx="10" class="box"/>
+  <text x="189" y="523" class="t">tmdb-mcp ×N</text>
+  <text x="189" y="545" class="s">5 tools de solo lectura</text>
+  <rect x="355" y="494" width="250" height="78" rx="10" class="box"/>
+  <text x="480" y="523" class="t">books-mcp ×N</text>
+  <text x="480" y="545" class="s">search_book, get_book</text>
+  <rect x="646" y="494" width="250" height="78" rx="10" class="box"/>
+  <text x="771" y="523" class="t">references-mcp ×N</text>
+  <text x="771" y="545" class="s">open_imdb, open_google_books</text>
+
+  <path d="M189 590V628" class="line"/>
+  <path d="M480 590V628" class="line"/>
+
+  <rect x="64" y="628" width="250" height="58" rx="10" class="box"/>
+  <text x="189" y="653" class="t">TMDB API</text>
+  <text x="189" y="673" class="s">tope de 1000 requests al día</text>
+  <rect x="355" y="628" width="250" height="58" rx="10" class="box"/>
+  <text x="480" y="653" class="t">Google Books API</text>
+  <text x="480" y="673" class="s">tope de 1000 requests al día</text>
+  <text x="771" y="662" class="s">sin llamadas externas</text>
+</svg>

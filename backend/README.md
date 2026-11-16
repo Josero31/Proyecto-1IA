@@ -149,6 +149,12 @@ agichat-books-mcp         # http://127.0.0.1:8102/mcp
 agichat-references-mcp    # http://127.0.0.1:8103/mcp
 ```
 
+Levantar el gateway WebSocket (con los 3 MCP servers corriendo y un Redis en `REDIS_URL`):
+
+```bash
+agichat-gateway           # ws://0.0.0.0:8000/ws · GET /health
+```
+
 Probar el sistema completo desde la terminal (sin widget):
 
 ```bash
