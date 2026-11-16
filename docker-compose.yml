@@ -1,0 +1,86 @@
+# Demo: docker compose up --build --scale gateway=3 --scale tmdb-mcp=2
+# Todo lo que se escala es sin estado; el estado compartido vive en Redis.
+# Solo nginx publica un puerto: Docker reparte las conexiones entre réplicas por nombre de servicio.
+
+x-backend: &backend
+  build: ./backend
+  image: agichat-backend
+  env_file:
+    - path: backend/.env
+      required: false
+  restart: unless-stopped
+
+services:
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  tmdb-mcp:
+    <<: *backend
+    command: agichat-tmdb-mcp
+    environment:
+      MCP_HOST: 0.0.0.0
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  books-mcp:
+    <<: *backend
+    command: agichat-books-mcp
+    environment:
+      MCP_HOST: 0.0.0.0
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  references-mcp:
+    <<: *backend
+    command: agichat-references-mcp
+    environment:
+      MCP_HOST: 0.0.0.0
+
+  gateway:
+    <<: *backend
+    command: agichat-gateway
+    environment:
+      TMDB_MCP_URL: http://tmdb-mcp:8101/mcp
+      BOOKS_MCP_URL: http://books-mcp:8102/mcp
+      REFERENCES_MCP_URL: http://references-mcp:8103/mcp
+      REDIS_URL: redis://redis:6379/0
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:8080}
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    depends_on:
+      redis:
+        condition: service_healthy
+      tmdb-mcp:
+        condition: service_started
+      books-mcp:
+        condition: service_started
+      references-mcp:
+        condition: service_started
+
+  nginx:
+    build:
+      context: .
+      dockerfile: deploy/nginx/Dockerfile
+    ports:
+      - '8080:80'
+    depends_on:
+      gateway:
+        condition: service_healthy
+    restart: unless-stopped
