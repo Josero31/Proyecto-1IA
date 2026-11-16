@@ -24,6 +24,9 @@ export const WIDGET_STYLES = `
   --agichat-code-bg: #1d2b28;
   --agichat-inline-code-bg: rgb(22 66 60 / 10%);
   --agichat-code-text: #e6efe9;
+  --agichat-card-bg: #ffffff;
+  --agichat-card-border: #d5dfdb;
+  --agichat-poster-bg: #dfe8e4;
   --agichat-font: 'Segoe UI Variable Text', 'Avenir Next', 'Helvetica Neue', system-ui, sans-serif;
   --agichat-font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Consolas, monospace;
   --agichat-radius: 18px;
@@ -60,6 +63,9 @@ export const WIDGET_STYLES = `
     --agichat-accent: #e9a23b;
     --agichat-code-bg: #0b1210;
     --agichat-inline-code-bg: rgb(255 255 255 / 10%);
+    --agichat-card-bg: #1a2421;
+    --agichat-card-border: #2e3b37;
+    --agichat-poster-bg: #0b1210;
   }
 }
 
@@ -378,12 +384,61 @@ button { font: inherit; color: inherit; }
 .send svg { width: 20px; height: 20px; }
 
 .footer {
-  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
   padding: 8px 16px 10px;
   text-align: center;
   font-size: 12px;
   color: var(--agichat-text-muted);
 }
+.footer p { margin: 0; }
+.tmdb-link { display: inline-flex; border-radius: 4px; }
+.tmdb-link svg { display: block; width: auto; height: 8px; }
+.tmdb-notice { font-size: 10px; line-height: 1.3; }
+
+.popup-notice {
+  margin: 0 12px 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--agichat-surface-muted);
+  font-size: 13px;
+}
+.popup-notice[hidden] { display: none; }
+
+/* Tarjetas de película */
+.cards { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.movie-card {
+  display: flex;
+  gap: 10px;
+  padding: 8px;
+  border: 1px solid var(--agichat-card-border);
+  border-radius: 12px;
+  background: var(--agichat-card-bg);
+}
+.movie-poster {
+  flex: none;
+  width: 72px;
+  aspect-ratio: 2 / 3;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--agichat-poster-bg);
+}
+.movie-info { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.movie-title { margin: 0; font-size: 15px; font-weight: 650; }
+.movie-rating { margin: 0; font-size: 13px; color: var(--agichat-accent); font-weight: 600; }
+.movie-overview {
+  margin: 0;
+  font-size: 13px;
+  color: var(--agichat-text-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.movie-links { display: flex; flex-wrap: wrap; gap: 12px; font-size: 13px; }
+.movie-links a { color: var(--agichat-primary); font-weight: 600; }
 
 @keyframes bounce {
   0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }

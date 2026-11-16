@@ -6,7 +6,9 @@ import { Composer } from './components/composer';
 import { MessageListView } from './components/message-list';
 import { bannerFor, STATUS_LABEL } from './connection-state';
 import { ICON_CHAT, ICON_CLOSE, ICON_MINIMIZE, ICON_SEND } from './icons';
+import { openInNewTab } from './components/popup-notice';
 import { WIDGET_STYLES } from './styles';
+import { TMDB_LOGO } from './tmdb-logo';
 
 export const AGICHAT_WIDGET_TAG = 'agichat-widget';
 
@@ -53,6 +55,7 @@ export class AgiChatWidgetElement extends HTMLElement {
   private bannerEl!: HTMLElement;
   private bannerTextEl!: HTMLElement;
   private bannerRetryEl!: HTMLButtonElement;
+  private popupNoticeEl!: HTMLElement;
   private scrollerEl!: HTMLElement;
   private emptyTextEl!: HTMLElement;
   private typingEl!: HTMLElement;
@@ -174,12 +177,23 @@ export class AgiChatWidgetElement extends HTMLElement {
             <span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>
           </div>
         </div>
+        <div class="popup-notice" role="status" hidden></div>
         <form class="composer">
           <label class="sr-only" for="agichat-input">Mensaje para el asistente</label>
           <textarea id="agichat-input" name="message" rows="1" autocomplete="off"></textarea>
           <button class="send" type="submit" aria-label="Enviar mensaje">${ICON_SEND}</button>
         </form>
-        <p class="footer">Funciona con AGIChat</p>
+        <footer class="footer">
+          <p class="footer-brand">Funciona con AGIChat</p>
+          <a class="tmdb-link" href="https://www.themoviedb.org/" target="_blank"
+            rel="noopener noreferrer" aria-label="The Movie Database (TMDB)">${TMDB_LOGO}</a>
+          <p class="tmdb-notice">
+            This product uses the TMDB API but is not endorsed or certified by TMDB.
+          </p>
+          <p class="tmdb-notice">
+            Este producto usa la API de TMDB, pero TMDB no lo respalda ni lo certifica.
+          </p>
+        </footer>
       </section>
       <button class="launcher" type="button" aria-expanded="false" aria-controls="agichat-panel"
         aria-label="Abrir chat">
@@ -198,6 +212,7 @@ export class AgiChatWidgetElement extends HTMLElement {
     this.bannerEl = $('.banner');
     this.bannerTextEl = $('.banner-text');
     this.bannerRetryEl = $('.banner-retry');
+    this.popupNoticeEl = $('.popup-notice');
     this.scrollerEl = $('.messages');
     this.emptyTextEl = $('.empty-text');
     this.typingEl = $('.typing');
@@ -244,7 +259,7 @@ export class AgiChatWidgetElement extends HTMLElement {
       this.transport.onMessage((message) => {
         const existing = this.store.getMessages().find((m) => m.id === message.id);
         if (existing) {
-          this.store.updateContent(message.id, message.content, message.status);
+          this.store.updateContent(message.id, message.content, message.status, message.cards);
         } else {
           this.store.add(message);
         }
@@ -253,6 +268,12 @@ export class AgiChatWidgetElement extends HTMLElement {
         }
       }),
     );
+    const offAction = this.transport.onAction?.((action) =>
+      openInNewTab(action, this.popupNoticeEl),
+    );
+    if (offAction) {
+      this.transportUnsubscribers.push(offAction);
+    }
     this.transportUnsubscribers.push(
       this.transport.onStatusChange((status) => this.renderConnection(status)),
     );

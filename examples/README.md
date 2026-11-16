@@ -32,6 +32,26 @@ Tema: sobrescribe las custom properties `--agichat-*` desde el CSS de tu página
 `agichat-widget { --agichat-primary: #0a4d8c; }`. La lista completa está en
 [`src/widget/styles.ts`](../src/widget/styles.ts).
 
+## Conectar con el backend real
+
+`WebSocketAgentTransport` habla con el gateway de AGIChat. El sitio desde el que se carga el
+widget debe estar en `ALLOWED_ORIGINS` del gateway.
+
+```ts
+import { WebSocketAgentTransport } from '@agichat/widget-sdk';
+
+widget.transport = new WebSocketAgentTransport('wss://chat.ejemplo.com/ws');
+```
+
+Con el transporte real el widget muestra las tarjetas con póster y abre IMDb o Google Books
+cuando el agente lo decide. Si el navegador bloquea la pestaña, aparece un botón para abrirla.
+Para la demo, permite las ventanas emergentes del sitio. En `index.html` y `examples/html/`
+basta con agregar `?ws=ws://localhost:8000/ws` a la URL.
+
+En el atributo `welcome-message` conviene usar el mismo texto que `WELCOME_MESSAGE` del backend
+(`backend/src/agichat/agents/prompts.py`), para anunciar desde el inicio que el agente compara
+películas con libros.
+
 ## Probar el ejemplo de HTML localmente
 
 ```bash

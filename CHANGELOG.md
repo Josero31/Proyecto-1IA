@@ -7,9 +7,24 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Sin publicar]
 
-### Pendiente (Fase 2 del curso)
+### Agregado
 
-- `WebSocketAgentTransport` que implemente `AgentTransport` para conectar con el agente real.
+- `WebSocketAgentTransport`: transporte real contra el gateway de AGIChat. Guarda el id de sesión
+  en `sessionStorage`, acumula el texto por id y valida de nuevo todo lo que llega del servidor.
+- Tarjetas de película (`MovieCard`, `ChatMessage.cards`) con póster, título, año, calificación,
+  sinopsis y enlaces a IMDb y TMDB, debajo de la burbuja del asistente. El póster solo se acepta
+  desde `https://image.tmdb.org/t/p/`, y los enlaces solo hacia IMDb y TMDB; lo demás se descarta.
+- `AgentTransport.onAction` (opcional) y el tipo `AgentAction`: el agente puede pedir abrir IMDb o
+  Google Books (solo https y el host del sitio). Si el navegador bloquea la pestaña, el widget
+  muestra un botón "Abrir en …" de respaldo.
+- Atribución de TMDB en el pie del widget: logo oficial enlazado y el texto requerido por TMDB.
+- La demo (`index.html`) y los ejemplos usan el gateway real con `?ws=ws://localhost:8000/ws` y el
+  mensaje de bienvenida del backend.
+
+### Cambiado
+
+- El presupuesto de `pnpm size` se mantiene en 40 kB gzip; el bundle ESM queda en ~39.8 kB por el
+  logo de TMDB y las tarjetas.
 
 ## [1.0.0] - 2026-09-22
 

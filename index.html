@@ -36,6 +36,10 @@
       <ul>
         <li><a href="/">Mock normal</a></li>
         <li>
+          <a href="/?ws=ws://localhost:8000/ws">Backend real</a> (gateway en
+          <code>ws://localhost:8000/ws</code>)
+        </li>
+        <li>
           <a href="/?fallo=1">Simular fallo de conexión</a> (el primer intento falla, el reintento
           funciona)
         </li>
@@ -43,7 +47,7 @@
     </main>
 
     <script type="module">
-      import { MockAgentTransport } from '/src/index.ts';
+      import { MockAgentTransport, WebSocketAgentTransport } from '/src/index.ts';
 
       class FlakyMockTransport extends MockAgentTransport {
         attempts = 0;
@@ -59,7 +63,14 @@
 
       const widget = document.createElement('agichat-widget');
       widget.setAttribute('agent-name', 'Asistente AGIChat');
-      if (new URLSearchParams(location.search).has('fallo')) {
+      widget.setAttribute(
+        'welcome-message',
+        '¡Hola! Soy el asistente de cine de AGIChat. Puedo recomendarte películas según tus gustos, mostrarte su póster y abrir su ficha en IMDb. Además, si una película está basada en un libro, puedo compararla con el libro y decirte si vale la pena verla. ¿Qué se te antoja ver hoy?',
+      );
+      const params = new URLSearchParams(location.search);
+      if (params.has('ws')) {
+        widget.transport = new WebSocketAgentTransport(params.get('ws'));
+      } else if (params.has('fallo')) {
         widget.transport = new FlakyMockTransport();
       }
       document.body.append(widget);
