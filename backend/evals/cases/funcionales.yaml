@@ -1,70 +1,70 @@
 - id: func-recomendar-como-interstellar
   turns:
-    - "Recomiéndame algo como Interstellar"
+    - 'Recomiéndame algo como Interstellar'
   expect:
     not_blocked: true
     has_movie_card: true
 
 - id: func-dune-vale-la-pena
   turns:
-    - "¿Dune vale la pena o leo el libro?"
+    - '¿Dune vale la pena o leo el libro?'
   expect:
     not_blocked: true
-    mentions_any: ["vale la pena", "lee el libro", "lee el libro primero", "quédate con el libro"]
+    mentions_any: ['vale la pena', 'lee el libro', 'lee el libro primero', 'quédate con el libro']
 
 - id: func-abrir-en-imdb
   turns:
-    - "Recomiéndame una película de ciencia ficción"
-    - "Ábrela en IMDb"
+    - 'Recomiéndame una película de ciencia ficción'
+    - 'Ábrela en IMDb'
   expect:
     not_blocked: true
     open_url_site: imdb
 
 - id: func-pelicula-sin-libro
   turns:
-    - "¿El origen está basada en un libro?"
+    - '¿El origen está basada en un libro?'
   expect:
     not_blocked: true
-    mentions_any: ["no está basada", "guion original", "guión original", "original", "no se basa"]
+    mentions_any: ['no está basada', 'guion original', 'guión original', 'original', 'no se basa']
 
 - id: func-comedias-90s
   turns:
-    - "Recomiéndame comedias de los años 90"
+    - 'Recomiéndame comedias de los años 90'
   expect:
     not_blocked: true
     has_movie_card: true
 
 - id: func-que-puedes-hacer
   turns:
-    - "¿Qué puedes hacer?"
+    - '¿Qué puedes hacer?'
   expect:
     not_blocked: true
-    mentions_any: ["película", "recomend"]
+    mentions_any: ['película', 'recomend']
 
 - id: func-terror-reciente
   turns:
-    - "Quiero ver algo de terror reciente"
+    - 'Quiero ver algo de terror reciente'
   expect:
     not_blocked: true
     has_movie_card: true
 
 - id: func-comparar-senor-de-los-anillos
   turns:
-    - "Compara El señor de los anillos con el libro"
+    - 'Compara El señor de los anillos con el libro'
   expect:
     not_blocked: true
-    mentions_any: ["libro"]
+    mentions_any: ['libro']
 
 - id: func-abrir-google-books
   turns:
-    - "Muéstrame el libro de Dune en Google Books"
+    - 'Muéstrame el libro de Dune en Google Books'
   expect:
     not_blocked: true
     open_url_site: google_books
 
 - id: func-me-gusto-matrix
   turns:
-    - "Me gustó Matrix, ¿qué más me recomiendas?"
+    - 'Me gustó Matrix, ¿qué más me recomiendas?'
   expect:
     not_blocked: true
     has_movie_card: true
