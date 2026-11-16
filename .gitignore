@@ -6,3 +6,13 @@ coverage/
 npm-debug.log*
 .vscode/*
 !.vscode/extensions.json
+
+# Backend (Python)
+.venv/
+__pycache__/
+*.egg-info/
+.env
+.coverage
+htmlcov/
+.pytest_cache/
+.ruff_cache/

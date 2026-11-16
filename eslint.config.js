@@ -5,7 +5,8 @@ import prettier from 'eslint-config-prettier';
 
 export default tseslint.config(
   {
-    ignores: ['dist/**', 'coverage/**', 'node_modules/**'],
+    // backend/ es Python (ruff); su .venv y htmlcov/ traen .js de terceros.
+    ignores: ['dist/**', 'coverage/**', 'node_modules/**', 'backend/**'],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
