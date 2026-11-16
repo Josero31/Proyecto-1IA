@@ -1,4 +1,4 @@
-import type { ChatMessage, MessageStatus } from './types';
+import type { ChatMessage, MessageStatus, MovieCard } from './types';
 
 type Listener = (messages: ChatMessage[]) => void;
 
@@ -20,7 +20,7 @@ export class MessageStore {
     this.notify();
   }
 
-  updateContent(id: string, content: string, status?: MessageStatus): void {
+  updateContent(id: string, content: string, status?: MessageStatus, cards?: MovieCard[]): void {
     const message = this.messages.find((m) => m.id === id);
     if (!message) {
       return;
@@ -28,6 +28,9 @@ export class MessageStore {
     message.content = content;
     if (status) {
       message.status = status;
+    }
+    if (cards) {
+      message.cards = cards;
     }
     this.notify();
   }
