@@ -22,3 +22,17 @@ def test_lee_variables_de_entorno_sin_exponer_secretos(monkeypatch: pytest.Monke
     assert settings.tmdb_read_access_token.get_secret_value() == "token-secreto"
     assert "token-secreto" not in repr(settings)
     assert settings.redis_url == "redis://redis:6379/0"
+
+
+def test_allowed_origins_se_lee_como_lista_separada_por_comas(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("ALLOWED_ORIGINS", "https://a.example, https://b.example")
+    settings = Settings(_env_file=None)  # type: ignore[call-arg]
+    assert settings.allowed_origins == ["https://a.example", "https://b.example"]
+    assert settings.gateway_port == 8000
+
+
+def test_allowed_origins_acepta_una_lista_directa() -> None:
+    settings = Settings(_env_file=None, allowed_origins=["https://a.example"])  # type: ignore[call-arg]
+    assert settings.allowed_origins == ["https://a.example"]

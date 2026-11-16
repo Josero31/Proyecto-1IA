@@ -13,6 +13,7 @@ dependencies = [
   "pydantic>=2.10",
   "pydantic-settings>=2.6",
   "uvicorn>=0.30",
+  "fastapi>=0.115",
 ]
 
 [project.optional-dependencies]
@@ -28,6 +29,7 @@ dev = [
 agichat-tmdb-mcp = "agichat.mcp_servers.tmdb.__main__:main"
 agichat-books-mcp = "agichat.mcp_servers.books.__main__:main"
 agichat-references-mcp = "agichat.mcp_servers.references.__main__:main"
+agichat-gateway = "agichat.gateway.__main__:main"
 agichat-chat = "agichat.cli:main"
 
 [build-system]
