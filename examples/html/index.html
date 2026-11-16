@@ -31,8 +31,8 @@
     <script type="module" src="../../dist/agichat-widget-sdk.js"></script>
 
     <agichat-widget
-      agent-name="Soporte Tienda"
-      welcome-message="Pregunta por tu pedido, envíos o devoluciones."
+      agent-name="Asistente de cine"
+      welcome-message="¡Hola! Soy el asistente de cine de AGIChat. Puedo recomendarte películas según tus gustos, mostrarte su póster y abrir su ficha en IMDb. Además, si una película está basada en un libro, puedo compararla con el libro y decirte si vale la pena verla. ¿Qué se te antoja ver hoy?"
       position="bottom-left"
     ></agichat-widget>
 
@@ -42,9 +42,13 @@
       widget.addEventListener('agichat-open', () => console.log('El usuario abrió el chat'));
       widget.addEventListener('agichat-close', () => console.log('El usuario cerró el chat'));
 
-      // Fase 2: reemplazar el mock por el transporte real sin tocar nada más.
-      // import { WebSocketAgentTransport } from '...';
-      // widget.transport = new WebSocketAgentTransport({ url: 'wss://agentes.agichat.example' });
+      // Con ?ws=ws://localhost:8000/ws en la URL se usa el gateway real; si no, el mock.
+      const wsUrl = new URLSearchParams(location.search).get('ws');
+      if (wsUrl) {
+        import('../../dist/agichat-widget-sdk.js').then(({ WebSocketAgentTransport }) => {
+          widget.transport = new WebSocketAgentTransport(wsUrl);
+        });
+      }
     </script>
   </body>
 </html>

@@ -59,6 +59,9 @@ localmente, fallarán en el PR.
 | Cambios en cómo se interpreta el Markdown del agente      | `src/widget/markdown.ts`                       |
 | Un ejemplo de integración para otro stack                 | `examples/<stack>/`                            |
 | Algo que el paquete publicado debe exportar               | `src/index.ts`                                 |
+| Validar datos que llegan del servidor                     | `src/core/validation.ts`                       |
+| Servicios, nginx o la demo de `docker compose`            | `docker-compose.yml` y `deploy/`               |
+| Gateway, agentes, MCP servers y evals (Python)            | `backend/` (ver `backend/AGENTS.md`)           |
 
 Reglas duras:
 
@@ -79,6 +82,24 @@ Reglas duras:
 - **Accesibilidad:** todo control interactivo es un `<button>` o elemento nativo con nombre
   accesible (`aria-label` si solo tiene ícono); el foco debe ser visible; las animaciones
   deben apagarse con `prefers-reduced-motion`. Los textos visibles van en español.
+- **Validación de lo que manda el servidor:** el widget vuelve a validar todo en el navegador
+  (`src/core/validation.ts`). El póster de una tarjeta solo se acepta con el prefijo
+  `https://image.tmdb.org/t/p/`; `imdbUrl` solo hacia `https://www.imdb.com/` y `tmdbUrl` solo
+  hacia `https://www.themoviedb.org/` (si no cumplen se descartan, la tarjeta sigue); un
+  `open_url` solo se acepta por https y con el host de su sitio (`www.imdb.com` para `imdb`,
+  `books.google.com` para `google_books`). Se ignoran JSON inválido y tipos de evento
+  desconocidos. No se agregan dominios sin un test que pruebe que no abren un vector de
+  phishing o exfiltración.
+- **Tarjetas:** se arman con `document.createElement` y `textContent`, nunca con `innerHTML`.
+  Los enlaces llevan `target="_blank"` y `rel="noopener noreferrer"`; la imagen, `alt`,
+  `loading="lazy"` y `referrerPolicy="no-referrer"`. No agregar `<img>` a la lista blanca de
+  `markdown.ts`: el póster va en un evento aparte porque las imágenes en el Markdown del
+  agente son un canal de exfiltración.
+- **Pestañas:** `window.open(url, '_blank')` sin `'noopener'` como tercer argumento (con esa
+  opción siempre devuelve `null` y no se detecta el bloqueo); si devuelve `null`, se muestra
+  un botón de respaldo.
+- **Claves:** nunca se escriben en el código, los tests, los reportes ni las imágenes de
+  Docker. Viven en `backend/.env` (ignorado por git) o en los secretos de GitHub.
 - El widget nunca debe llamar a `transport.send()` si el transporte no está en `open`:
   usa `ensureConnected()` en `agichat-widget.ts`.
 - No agregues dependencias nuevas al bundle del SDK (`dependencies`) sin justificarlo: es
@@ -140,12 +161,9 @@ Reglas duras:
 - **Parte 1 (hecha):** fundaciones, contrato `AgentTransport`, mock, CI/CD, widget mínimo.
 - **Parte 2 (hecha, v1.0.0):** diseño visual, Markdown sanitizado, estados de UX,
   accesibilidad, ejemplos, empaquetado y release.
-- **Fase 2 del curso (siguiente):** crear `src/transport/websocket-transport.ts` (o
-  similar) que implemente `AgentTransport` con su test, y exportarlo en `src/index.ts`.
-  **No hace falta tocar `src/widget/`**: el widget ya maneja todos los estados de
-  `ConnectionStatus`, reintentos y timeout. El transporte debe:
-  - emitir `connecting` → `open` al conectar, `error` si falla y `closed` si se cierra;
-  - emitir por `onMessage` los mensajes del agente con un `id` estable por respuesta,
-    `status: 'streaming'` para los parciales y `'complete'` (o `'error'`) al final, con el
-    **contenido acumulado** (no solo el delta), igual que el mock;
-  - lanzar una excepción en `send()` si no está `open`.
+- **Fase 2 del curso (hecha):** `WebSocketAgentTransport` en
+  `src/transport/websocket-transport.ts`, tarjetas de película, apertura de pestañas y
+  atribución de TMDB en el widget, gateway y evals en `backend/`, `docker-compose.yml` y el
+  job `backend` del CI. El transporte emite `connecting` → `open`, `error` si falla y
+  `closed` si se cierra, manda por `onMessage` el contenido **acumulado** con un `id` estable
+  por respuesta, y lanza una excepción en `send()` si no está `open`.

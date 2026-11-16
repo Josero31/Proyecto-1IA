@@ -79,4 +79,29 @@ describe('MessageListView', () => {
     view.render([message({ id: '1' })]);
     expect(scroller.scrollTop).toBe(100);
   });
+
+  it('repinta cuando llegan tarjetas a un mensaje ya completo', () => {
+    const msg = message({ id: '1', content: 'Dune', status: 'complete' });
+    view.render([msg]);
+    const node = list.firstElementChild;
+    expect(node?.querySelector('.movie-card')).toBeNull();
+
+    const card = {
+      tmdbId: 1,
+      title: 'Dune',
+      year: 2021,
+      posterUrl: null,
+      overview: '',
+      rating: null,
+      imdbUrl: null,
+      tmdbUrl: null,
+    };
+    view.render([{ ...msg, cards: [card] }]);
+
+    expect(list.firstElementChild).toBe(node);
+    expect(node?.querySelectorAll('.movie-card')).toHaveLength(1);
+
+    view.render([{ ...msg, cards: [card, { ...card, tmdbId: 2, title: 'Otra' }] }]);
+    expect(node?.querySelectorAll('.movie-card')).toHaveLength(2);
+  });
 });

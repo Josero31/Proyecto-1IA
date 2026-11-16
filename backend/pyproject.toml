@@ -13,6 +13,8 @@ dependencies = [
   "pydantic>=2.10",
   "pydantic-settings>=2.6",
   "uvicorn>=0.30",
+  "fastapi>=0.115",
+  "websockets>=13",
 ]
 
 [project.optional-dependencies]
@@ -22,12 +24,14 @@ dev = [
   "pytest-cov>=6.0",
   "ruff>=0.15",
   "fakeredis>=2.30",
+  "pyyaml>=6.0",
 ]
 
 [project.scripts]
 agichat-tmdb-mcp = "agichat.mcp_servers.tmdb.__main__:main"
 agichat-books-mcp = "agichat.mcp_servers.books.__main__:main"
 agichat-references-mcp = "agichat.mcp_servers.references.__main__:main"
+agichat-gateway = "agichat.gateway.__main__:main"
 agichat-chat = "agichat.cli:main"
 
 [build-system]
@@ -43,10 +47,10 @@ asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
 
 [tool.coverage.run]
-source = ["agichat"]
+source = ["agichat", "evals"]
 branch = true
 # Puntos de entrada de procesos (arrancan uvicorn o leen stdin); igual que src/index.ts en el SDK.
-omit = ["*/__main__.py", "*/agichat/cli.py"]
+omit = ["*/__main__.py", "*/agichat/cli.py", "*/evals/run.py"]
 
 [tool.coverage.report]
 fail_under = 80
@@ -56,7 +60,7 @@ skip_covered = true
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-src = ["src", "tests"]
+src = ["src", "tests", "evals"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "SIM", "ASYNC", "RUF"]

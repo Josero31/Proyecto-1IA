@@ -1,5 +1,7 @@
-from pydantic import SecretStr
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing import Annotated
+
+from pydantic import SecretStr, field_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -26,3 +28,17 @@ class Settings(BaseSettings):
     tmdb_mcp_url: str = "http://127.0.0.1:8101/mcp"
     books_mcp_url: str = "http://127.0.0.1:8102/mcp"
     references_mcp_url: str = "http://127.0.0.1:8103/mcp"
+
+    gateway_port: int = 8000
+    allowed_origins: Annotated[list[str], NoDecode] = [
+        "http://localhost:8080",
+        "http://localhost:5173",
+        "http://localhost:4173",
+    ]
+
+    @field_validator("allowed_origins", mode="before")
+    @classmethod
+    def _split_origins(cls, value: object) -> object:
+        if isinstance(value, str):
+            return [origin.strip() for origin in value.split(",") if origin.strip()]
+        return value

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AGIChat — demo</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: system-ui, sans-serif;
+        background: #f3f5f4;
+        color: #1a2421;
+      }
+      main {
+        max-width: 640px;
+        padding: 48px 24px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>AGIChat</h1>
+      <p>Abre el chat con el botón de la esquina inferior derecha.</p>
+      <p>
+        Para que IMDb y Google Books se abran solos, permite las ventanas emergentes de este sitio.
+      </p>
+    </main>
+
+    <script type="module">
+      import { WebSocketAgentTransport } from '/sdk/agichat-widget-sdk.js';
+
+      const widget = document.createElement('agichat-widget');
+      widget.setAttribute('agent-name', 'Asistente AGIChat');
+      widget.setAttribute(
+        'welcome-message',
+        '¡Hola! Soy el asistente de cine de AGIChat. Puedo recomendarte películas según tus gustos, mostrarte su póster y abrir su ficha en IMDb. Además, si una película está basada en un libro, puedo compararla con el libro y decirte si vale la pena verla. ¿Qué se te antoja ver hoy?',
+      );
+      const scheme = location.protocol === 'https:' ? 'wss' : 'ws';
+      widget.transport = new WebSocketAgentTransport(`${scheme}://${location.host}/ws`);
+      document.body.append(widget);
+    </script>
+  </body>
+</html>

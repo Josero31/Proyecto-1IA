@@ -1,5 +1,6 @@
 import type { ChatMessage } from '../../core/types';
 import { renderMarkdown } from '../markdown';
+import { createMovieCardElement } from './movie-card';
 
 const SPEAKER_LABEL: Record<ChatMessage['role'], string> = {
   user: 'Tú',
@@ -45,6 +46,14 @@ export function updateMessageElement(el: HTMLElement, message: ChatMessage): voi
     content.innerHTML = renderMarkdown(message.content);
   } else {
     content.textContent = message.content;
+  }
+
+  el.querySelector('.cards')?.remove();
+  if (message.role === 'assistant' && message.cards?.length) {
+    const cards = document.createElement('div');
+    cards.className = 'cards';
+    cards.append(...message.cards.map(createMovieCardElement));
+    el.querySelector('.bubble')?.after(cards);
   }
 
   el.querySelector('.message-error')?.remove();

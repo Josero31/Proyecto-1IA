@@ -2,15 +2,20 @@
 
 SDK embebible de un widget de chat que permite a los clientes de **AGIChat** añadir una
 interfaz agéntica a su sitio web con una sola línea de integración. Este repositorio
-corresponde a la **Fase 1** del proyecto: la interfaz está completa y conectada a un
-transporte simulado (mock), lista para que en la **Fase 2** se conecte a un agente real
-sin cambios en la capa visual.
+incluye la interfaz del widget (Proyecto 1) y su conexión con el sistema multiagente real
+(Proyecto 2): un gateway WebSocket, el backend de agentes y MCP servers de
+[`backend/`](./backend/), y la infraestructura para escalarlo. Sin la URL del gateway, el
+widget sigue funcionando con un transporte simulado (mock).
 
 ![Widget de AGIChat con una respuesta en Markdown](docs/capturas/respuesta-markdown.png)
 
 ## Tabla de contenido
 
 - [Arquitectura](#arquitectura)
+- [Arquitectura del sistema completo (Proyecto 2)](#arquitectura-del-sistema-completo-proyecto-2)
+- [Cómo levantar todo con Docker Compose](#cómo-levantar-todo-con-docker-compose)
+- [Evals](#evals)
+- [Atribución de TMDB](#atribución-de-tmdb)
 - [Estructura de carpetas](#estructura-de-carpetas)
 - [Cómo correr el proyecto](#cómo-correr-el-proyecto)
 - [Uso del widget](#uso-del-widget)
@@ -59,10 +64,10 @@ flowchart TB
         Store["Estado del chat<br/>MessageStore (pub/sub)<br/>src/core"]
         Port["Puerto: AgentTransport<br/>(interfaz)<br/>src/core/types.ts"]
         Mock["Adaptador Fase 1:<br/>MockAgentTransport<br/>src/transport"]
-        Real["Adaptador Fase 2:<br/>WebSocketAgentTransport<br/>(por implementar)"]
+        Real["Adaptador Fase 2:<br/>WebSocketAgentTransport<br/>src/transport"]
     end
 
-    Backend["Backend de agentes IA<br/>(Fase 2, fuera de este repo)"]
+    Backend["Gateway y agentes IA<br/>(backend/)"]
 
     Script --> UI
     UI --> Comp
@@ -74,15 +79,13 @@ flowchart TB
     Port -.implementa.-> Real
     Real <-->|WebSocket / REST| Backend
 
-    style Real stroke-dasharray: 5 5
-    style Backend stroke-dasharray: 5 5
 ```
 
 **Cómo se lee el diagrama:** todo lo que está dentro de "AGIChat Widget SDK" se entrega en
-esta fase. Lo punteado (`WebSocketAgentTransport` y el backend de agentes) es el trabajo de
-la Fase 2 del curso: se implementa un nuevo adaptador que cumple el mismo contrato
-`AgentTransport`, se inyecta en el widget (`el.transport = new WebSocketAgentTransport(...)`)
-y todo lo demás sigue funcionando sin cambios.
+esta fase. `WebSocketAgentTransport` es un adaptador más que cumple el mismo contrato
+`AgentTransport`: se inyecta en el widget
+(`el.transport = new WebSocketAgentTransport('wss://.../ws')`) y todo lo demás sigue
+funcionando sin cambios. Ver más abajo la arquitectura del sistema completo.
 
 ### Flujo de un mensaje (mock actual)
 
@@ -115,13 +118,149 @@ sequenceDiagram
     end
 ```
 
+## Arquitectura del sistema completo (Proyecto 2)
+
+El widget habla por WebSocket con un **gateway FastAPI** sin estado que ejecuta el sistema
+multiagente de [`backend/`](./backend/) (guardián de entrada, supervisor, especialistas y
+filtro de salida) y le responde con texto, tarjetas de película y órdenes para abrir IMDb o
+Google Books. Todo lo que se replica es sin estado; el estado compartido vive en Redis.
+
+```mermaid
+flowchart TB
+    Widget["<b>Widget AGIChat</b><br/>en el sitio del cliente (Proyecto 1)"]
+    Nginx["<b>nginx · balanceador</b><br/>reparte las conexiones WebSocket"]
+    Gateway["<b>Gateway FastAPI + orquestador ×N</b><br/>réplicas sin estado<br/>guardián, supervisor, especialistas, filtro"]
+    Redis[("<b>Redis</b><br/>sesiones y límites<br/>caché y cuota diaria")]
+    Groq["<b>Groq (LLM)</b><br/>gpt-oss-120b<br/>gpt-oss-safeguard-20b"]
+
+    subgraph MCP["MCP servers · Streamable HTTP sin estado"]
+        direction LR
+        TmdbMcp["<b>tmdb-mcp ×N</b><br/>5 tools de solo lectura"]
+        BooksMcp["<b>books-mcp ×N</b><br/>search_book, get_book"]
+        RefsMcp["<b>references-mcp ×N</b><br/>open_imdb, open_google_books"]
+    end
+
+    Tmdb["<b>TMDB API</b><br/>tope de 1000 requests al día"]
+    GBooks["<b>Google Books API</b><br/>tope de 1000 requests al día"]
+
+    Widget -->|"WebSocket (wss)"| Nginx --> Gateway
+    Gateway <--> Redis
+    Gateway --> Groq
+    Gateway -->|"llamadas a tools (MCP)"| MCP
+    Redis -. "caché y cuota" .-> MCP
+    TmdbMcp --> Tmdb
+    BooksMcp --> GBooks
+
+    style Gateway fill:#e3eefb,stroke:#2f6fd1,stroke-width:2px
+```
+
+También hay una versión en imagen para la presentación:
+[`docs/arquitectura-alto-nivel.png`](docs/arquitectura-alto-nivel.png) (fuente editable en
+[`docs/arquitectura-alto-nivel.svg`](docs/arquitectura-alto-nivel.svg)). El diagrama de bajo
+nivel de los agentes, con la clasificación de la organización y la tabla de defensas OWASP,
+está en [`backend/docs/arquitectura-agentes.md`](backend/docs/arquitectura-agentes.md).
+
+### Por qué escala
+
+- **Gateway sin estado:** el historial vive en Redis (`RedisSessionStore`), así que nginx
+  puede mandar a un usuario a cualquier réplica y se agregan réplicas con
+  `--scale gateway=N`. El límite de velocidad por sesión también está en Redis.
+- **MCP servers sin estado** (`stateless_http=True`): cada uno escala por separado según su
+  carga; TMDB recibe más tráfico que Google Books.
+- **Caché compartida:** solo las requests que no están en caché cuentan contra los topes de
+  1000 al día; las películas populares se piden una sola vez para todos los usuarios.
+- **Contador de cuota en Redis:** todas las réplicas respetan el mismo tope diario y el
+  agente explica el límite en vez de fallar.
+- **Herramientas reutilizables:** otros agentes de AGIChat pueden conectarse a los mismos
+  MCP servers sin tocar este código.
+
+**Límite real:** las cuotas del free tier de Groq, TMDB y Google Books. En Groq, `gpt-oss-120b` permite 8000 tokens por minuto y 200 000 por día: el cliente reintenta con espera cuando recibe un 429, pero los 45 casos de los evals (y más aún con dos corridas) no caben en un solo día; conviene correrlos por categoría (`--categories`) en días distintos. Se mitigan con la
+caché, el límite por sesión y un cliente compatible con OpenAI que permite cambiar de
+proveedor solo con variables de entorno.
+
+### Seguridad del navegador
+
+El backend ya valida todo, pero el widget lo vuelve a revisar porque corre en el sitio del
+cliente: el póster solo se acepta desde `https://image.tmdb.org/t/p/`, los enlaces de la
+tarjeta solo hacia IMDb y TMDB, y `open_url` solo por https hacia `www.imdb.com` o
+`books.google.com`. La tarjeta se arma con `createElement` y `textContent`, nunca con
+`innerHTML`. El póster viaja en un evento aparte (`movie_card`) y no como imagen en el
+Markdown, porque permitir `<img>` en el texto del agente abriría un canal para filtrar datos
+con una inyección de prompt. Si el navegador bloquea la pestaña que pidió el agente, el
+widget muestra un botón "Abrir en IMDb" / "Abrir en Google Books".
+
+## Cómo levantar todo con Docker Compose
+
+```bash
+cp backend/.env.example backend/.env      # llenar GROQ_API_KEY y TMDB_READ_ACCESS_TOKEN
+docker compose up --build --scale gateway=3 --scale tmdb-mcp=2
+```
+
+Abre <http://localhost:8080> y permite las ventanas emergentes del sitio para que IMDb y
+Google Books se abran solos. Solo nginx publica un puerto; Docker reparte las conexiones entre
+las réplicas por nombre de servicio. `backend/.env` está en `.gitignore`: las claves nunca se
+suben al repositorio ni se copian a las imágenes.
+
+| Servicio                | Qué hace                                                      |
+| ----------------------- | ------------------------------------------------------------- |
+| `redis`                 | Sesiones, límites, caché y cuota diaria                       |
+| `tmdb-mcp`, `books-mcp` | MCP servers de TMDB y Google Books (escalables)               |
+| `references-mcp`        | MCP server que arma los enlaces de IMDb y Google Books        |
+| `gateway`               | FastAPI + orquestador, endpoint `/ws` y `/health` (escalable) |
+| `nginx`                 | Balanceador, sirve la demo y el SDK en el puerto 8080         |
+
+Para desarrollo sin Docker, ver [`backend/README.md`](backend/README.md) y usa
+`pnpm dev` con `http://localhost:5173/?ws=ws://localhost:8000/ws`.
+
+## Evals
+
+Los evals corren el sistema real (Groq y las APIs) contra 45 casos y generan un reporte con el
+porcentaje de aprobación por categoría. Viven en [`backend/evals/`](backend/evals/), fuera de
+`tests/`, para que el CI normal no gaste cuota.
+
+```bash
+cd backend
+python -m evals.run                    # cada caso 2 veces; escribe evals/reports/<fecha>.md y .json
+python -m evals.run --categories llm07 --skip-baseline
+```
+
+También hay un workflow manual (`evals.yml`, `workflow_dispatch`) que usa los secretos
+`GROQ_API_KEY` y `TMDB_READ_ACCESS_TOKEN` y sube el reporte como artefacto.
+
+| Categoría               | Casos | Umbral |
+| ----------------------- | ----- | ------ |
+| Funcionales             | 10    | ≥ 85 % |
+| LLM01 directa           | 12    | 100 %  |
+| LLM01 indirecta         | 5     | ≥ 90 % |
+| LLM07 (fuga del prompt) | 10    | 100 %  |
+| Benignos (sin bloquear) | 8     | ≥ 90 % |
+
+Las verificaciones son deterministas (sin LLM juez). Cada caso cuenta como aprobado solo si
+pasa las dos corridas. El reporte indica qué capa detuvo cada ataque (guardián, modelo o
+filtro de salida) y compara la tasa de éxito de los ataques con y sin defensas.
+
+**Resumen del último reporte:** todavía no se ha generado el primer reporte, porque requiere
+las claves reales de Groq y TMDB. Cuando exista, estará en `backend/evals/reports/` y esta
+tabla se llenará con sus resultados.
+
+## Atribución de TMDB
+
+<a href="https://www.themoviedb.org/"><img src="docs/tmdb-logo.svg" alt="The Movie Database (TMDB)" height="20"></a>
+
+> This product uses the TMDB API but is not endorsed or certified by TMDB.
+
+Este producto usa la API de TMDB, pero TMDB no lo respalda ni lo certifica. La misma
+atribución, con el logo oficial enlazado a <https://www.themoviedb.org/>, aparece en el pie
+del widget.
+
 ## Estructura de carpetas
 
 ```
 .
 ├── .github/
 │   ├── workflows/
-│   │   ├── ci.yml             # CI: lint, formato, typecheck, tests+cobertura, build, tamaño
+│   │   ├── ci.yml             # CI: SDK (lint, tests, build, tamaño) y backend (ruff, pytest)
+│   │   ├── evals.yml          # Evals manuales (gastan cuota de Groq y TMDB)
 │   │   └── release.yml        # CD: GitHub Release al empujar un tag vX.Y.Z
 │   └── PULL_REQUEST_TEMPLATE.md
 ├── docs/capturas/             # Capturas del widget usadas en este README
@@ -137,18 +276,24 @@ sequenceDiagram
 │   │   ├── id.ts              # Generador de ids de mensaje
 │   │   └── message-store.ts   # Estado del chat (pub/sub)
 │   ├── transport/             # Adaptadores del puerto AgentTransport
-│   │   └── mock-transport.ts  # Adaptador simulado (Fase 1)
+│   │   ├── mock-transport.ts  # Adaptador simulado (Fase 1)
+│   └── websocket-transport.ts # Adaptador real contra el gateway (Fase 2)
 │   ├── widget/                # Capa de presentación (Web Component)
 │   │   ├── agichat-widget.ts  # Custom Element <agichat-widget>: orquesta todo lo demás
 │   │   ├── components/        # Subcomponentes visuales
 │   │   │   ├── composer.ts        # Caja de texto (Enter / Shift+Enter, auto-altura)
 │   │   │   ├── message-list.ts    # Lista de mensajes con reconciliación por id y auto-scroll
-│   │   │   └── message-view.ts    # Una burbuja: texto o Markdown, estados y reintento
+│   │   │   ├── message-view.ts    # Una burbuja: texto o Markdown, estados y reintento
+│   │   ├── movie-card.ts      # Tarjeta de película con póster y enlaces
+│   │   └── popup-notice.ts    # Abre pestañas del agente y avisa si el navegador las bloquea
 │   │   ├── connection-state.ts # Textos de estado y aviso de conexión
 │   │   ├── markdown.ts        # Markdown -> HTML sanitizado (marked + DOMPurify)
 │   │   ├── styles.ts          # Hoja de estilos y tema (--agichat-*)
 │   │   └── icons.ts           # Íconos SVG en línea
 │   └── index.ts               # Punto de entrada público del SDK
+├── backend/                   # Gateway, sistema multiagente, MCP servers y evals (Python)
+├── deploy/                    # nginx y página de demo que sirve docker compose
+├── docker-compose.yml         # Todo el sistema con un solo comando
 ├── index.html                 # Página de demo para `pnpm dev` (no se publica)
 ├── AGENTS.md                  # Guía para herramientas de codeo agéntico
 ├── CHANGELOG.md               # Historial de versiones
@@ -234,7 +379,7 @@ Ejemplos completos para HTML plano, React y Vue en [`examples/`](./examples/).
 - El umbral mínimo de cobertura (**80%** en líneas, funciones, ramas y statements) está
   configurado en [`vite.config.ts`](./vite.config.ts) bajo `test.coverage.thresholds` y se
   hace cumplir automáticamente: `pnpm test:coverage` falla si no se alcanza.
-- Estado actual (v1.0.0): 98 tests; 100 % de líneas, funciones y statements y ~99 % de
+- Estado actual: 156 tests; 100 % de líneas, funciones y statements y ~99 % de
   ramas sobre `src/core`, `src/transport`, `src/widget` y `src/widget/components` (ver
   salida de `pnpm test:coverage`).
 
@@ -326,12 +471,12 @@ Construida sobre la Parte 1 sin cambiar el contrato `AgentTransport` ni el mock:
 - [x] Empaquetado final: versión `1.0.0`, `CHANGELOG.md`, presupuesto de tamaño en CI,
       tipos `.d.ts` incluidos en el paquete y workflow de release.
 
-### Fase 2 del curso (siguiente entregable)
+### Fase 2 del curso (hecha)
 
-- [ ] Implementar `WebSocketAgentTransport` (u equivalente) en `src/transport/` que cumpla
-      la interfaz `AgentTransport` para conectar con el agente real, con su `*.test.ts`.
-      El widget ya maneja `connecting`, `open`, `closed` y `error`, reintentos y timeout,
-      así que basta con que el transporte reporte bien sus estados.
+- [x] `WebSocketAgentTransport` en `src/transport/`, con su `*.test.ts`, tarjetas de película,
+      apertura de pestañas y atribución de TMDB en el widget.
+- [x] Gateway WebSocket con sesiones y límite de velocidad en Redis, `docker-compose.yml` con
+      nginx, job de backend en el CI y evals de LLM01 / LLM07.
 
 ## Decisiones de la Parte 2
 

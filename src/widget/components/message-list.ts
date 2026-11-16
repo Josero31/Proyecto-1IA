@@ -5,7 +5,11 @@ interface RenderedMessage {
   el: HTMLElement;
   content: string;
   status: MessageStatus;
+  cardsKey: string;
 }
+
+const cardsKey = (message: ChatMessage): string =>
+  message.cards?.map((card) => card.tmdbId).join(',') ?? '';
 
 const STICK_TO_BOTTOM_THRESHOLD_PX = 48;
 
@@ -39,11 +43,21 @@ export class MessageListView {
       if (!entry) {
         const el = createMessageElement(message);
         this.list.append(el);
-        this.rendered.set(message.id, { el, content: message.content, status: message.status });
-      } else if (entry.content !== message.content || entry.status !== message.status) {
+        this.rendered.set(message.id, {
+          el,
+          content: message.content,
+          status: message.status,
+          cardsKey: cardsKey(message),
+        });
+      } else if (
+        entry.content !== message.content ||
+        entry.status !== message.status ||
+        entry.cardsKey !== cardsKey(message)
+      ) {
         updateMessageElement(entry.el, message);
         entry.content = message.content;
         entry.status = message.status;
+        entry.cardsKey = cardsKey(message);
       }
     }
 

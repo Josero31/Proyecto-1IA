@@ -54,3 +54,36 @@ jobs:
           name: dist
           path: dist
           retention-days: 7
+
+  backend:
+    name: Backend (ruff, pytest y docker compose)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Instalar dependencias
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Lint (ruff)
+        working-directory: backend
+        run: ruff check .
+
+      - name: Formato (ruff)
+        working-directory: backend
+        run: ruff format --check .
+
+      - name: Tests con cobertura (mínimo 80%)
+        working-directory: backend
+        run: pytest --cov
+
+      - name: Validar docker-compose.yml
+        run: docker compose config -q

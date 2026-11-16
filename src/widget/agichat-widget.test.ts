@@ -6,7 +6,7 @@ import {
   DEFAULTS,
   defineAgiChatWidget,
 } from './agichat-widget';
-import type { AgentTransport, ChatMessage, ConnectionStatus } from '../core/types';
+import type { AgentAction, AgentTransport, ChatMessage, ConnectionStatus } from '../core/types';
 
 type ConnectMode = 'open' | 'reject' | 'hang';
 
@@ -24,6 +24,16 @@ class FakeTransport implements AgentTransport {
   send = vi.fn();
   private messageHandlers = new Set<(message: ChatMessage) => void>();
   private statusHandlers = new Set<(status: ConnectionStatus) => void>();
+  private actionHandlers = new Set<(action: AgentAction) => void>();
+
+  onAction(handler: (action: AgentAction) => void): () => void {
+    this.actionHandlers.add(handler);
+    return () => this.actionHandlers.delete(handler);
+  }
+
+  emitAction(action: AgentAction): void {
+    for (const handler of this.actionHandlers) handler(action);
+  }
 
   onMessage(handler: (message: ChatMessage) => void): () => void {
     this.messageHandlers.add(handler);
@@ -523,6 +533,84 @@ describe('AgiChatWidgetElement', () => {
       el.transport = first;
       el.transport = new FakeTransport();
       expect(first.disconnect).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('tarjetas, pestañas y atribución de TMDB', () => {
+    const card = {
+      tmdbId: 438631,
+      title: 'Dune',
+      year: 2021,
+      posterUrl: 'https://image.tmdb.org/t/p/w500/dune.jpg',
+      overview: 'Paul Atreides llega a Arrakis.',
+      rating: 7.8,
+      imdbUrl: 'https://www.imdb.com/title/tt1160419/',
+      tmdbUrl: 'https://www.themoviedb.org/movie/438631',
+    };
+    const imdb: AgentAction = {
+      type: 'open_url',
+      url: 'https://www.imdb.com/title/tt1160419/',
+      site: 'imdb',
+    };
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('dibuja la tarjeta debajo de la burbuja cuando llegan tarjetas a un mensaje completo', () => {
+      const { transport, q } = mount();
+      transport.emitMessage({ id: 'a1', content: 'Dune', status: 'complete' });
+      expect(q('[data-role="assistant"] .cards')).toBeNull();
+
+      transport.emitMessage({ id: 'a1', content: 'Dune', status: 'complete', cards: [card] });
+
+      const message = q('[data-role="assistant"]');
+      expect(message.querySelector('.bubble + .cards .movie-title')?.textContent).toBe(
+        'Dune (2021)',
+      );
+    });
+
+    it('abre la pestaña que pide el agente', () => {
+      const popup = { opener: window } as unknown as Window;
+      const open = vi.spyOn(window, 'open').mockReturnValue(popup);
+      const { transport, q } = mount();
+
+      transport.emitAction(imdb);
+
+      expect(open).toHaveBeenCalledWith(imdb.url, '_blank');
+      expect(q('.popup-notice').hidden).toBe(true);
+    });
+
+    it('si el navegador bloquea la pestaña muestra el botón de respaldo', () => {
+      const open = vi.spyOn(window, 'open').mockReturnValue(null);
+      const { transport, q } = mount();
+
+      transport.emitAction(imdb);
+
+      expect(q('.popup-notice').hidden).toBe(false);
+      open.mockReturnValue({ opener: window } as unknown as Window);
+      q<HTMLButtonElement>('.popup-notice button').click();
+      expect(open).toHaveBeenCalledTimes(2);
+      expect(q('.popup-notice').hidden).toBe(true);
+    });
+
+    it('funciona con el transporte mock, que no tiene onAction', () => {
+      const el = document.createElement(AGICHAT_WIDGET_TAG);
+      document.body.appendChild(el);
+      expect(el.shadowRoot?.querySelector('.popup-notice')).not.toBeNull();
+    });
+
+    it('muestra la atribución de TMDB con el logo enlazado junto al nombre de AGIChat', () => {
+      const { q } = mount();
+      const link = q<HTMLAnchorElement>('.tmdb-link');
+      expect(link.href).toBe('https://www.themoviedb.org/');
+      expect(link.rel).toBe('noopener noreferrer');
+      expect(link.getAttribute('aria-label')).toBe('The Movie Database (TMDB)');
+      expect(link.querySelector('svg')).not.toBeNull();
+      expect(q('.footer').textContent).toContain(
+        'This product uses the TMDB API but is not endorsed or certified by TMDB.',
+      );
+      expect(q('.footer-brand').textContent).toBe('Funciona con AGIChat');
     });
   });
 
