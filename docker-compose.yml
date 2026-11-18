@@ -53,7 +53,7 @@ services:
       BOOKS_MCP_URL: http://books-mcp:8102/mcp
       REFERENCES_MCP_URL: http://references-mcp:8103/mcp
       REDIS_URL: redis://redis:6379/0
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:8080}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:8081}
     healthcheck:
       test:
         - CMD
@@ -79,7 +79,7 @@ services:
       context: .
       dockerfile: deploy/nginx/Dockerfile
     ports:
-      - '8080:80'
+      - '8081:80'
     depends_on:
       gateway:
         condition: service_healthy
